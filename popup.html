@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Token</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="container" class="container">
+    <label for="discordToken">Discord Token</label>
+    <input type="password" id="discordToken" placeholder="&#x0e43;&#x0e2a;&#x0e48; token" class="token-input">
+    <button id="saveDiscordSettings" class="btn-save">&#x0e1a;&#x0e31;&#x0e19;&#x0e17;&#x0e36;&#x0e01;</button>
+    <label class="toggle-row" for="lyricsDebugMode">
+      <span>Debug เนื้อเพลงใน Console</span>
+      <input type="checkbox" id="lyricsDebugMode" class="toggle-input">
+      <span class="toggle-slider" aria-hidden="true"></span>
+    </label>
+    <label for="lyricsOutput">เนื้อเพลงทั้งหมด</label>
+    <textarea id="lyricsOutput" class="lyrics-output" readonly placeholder="กดโหลดเพื่อแสดงเนื้อเพลง"></textarea>
+    <button id="loadLyrics" class="btn-load">โหลดเนื้อเพลง</button>
+    <p id="lyricsStatus" class="status-message" aria-live="polite"></p>
+    <p id="discordStatus" class="status-message" aria-live="polite"></p>
+  </div>
+
+  <script src="discord.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

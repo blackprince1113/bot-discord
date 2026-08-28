@@ -1,0 +1,102 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 320px;
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #222222;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.token-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.token-input:focus {
+  border-color: #5865f2;
+  outline: none;
+}
+
+.lyrics-output {
+  width: 100%;
+  min-height: 180px;
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lyrics-output:focus {
+  border-color: #5865f2;
+  outline: none;
+}
+
+.btn-load {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #5865f2;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5865f2;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-load:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.btn-save {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 4px;
+  background: #5865f2;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.status-message {
+  min-height: 18px;
+  font-size: 12px;
+}
+
+.status-message.success {
+  color: #177245;
+}
+
+.status-message.error {
+  color: #b42318;
+}

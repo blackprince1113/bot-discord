@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Spotify Lyrics Viewer",
+  "version": "1.0.0",
+  "description": "แสดงเนื้อเพลง Spotify ในแถบด้านข้างของ Chrome",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://discord.com/*",
+    "https://open.spotify.com/*"
+  ],
+  "action": {
+    "default_title": "Spotify Lyrics Viewer",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon.png",
+      "48": "images/icon.png",
+      "128": "images/icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://open.spotify.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "images/icon.png",
+    "48": "images/icon.png",
+    "128": "images/icon.png"
+  }
+}
