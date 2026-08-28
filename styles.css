@@ -37,6 +37,17 @@ label {
   outline: none;
 }
 
+.current-lyric {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-left: 4px solid #5865f2;
+  border-radius: 4px;
+  background: #f1f3ff;
+  color: #30344a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .lyrics-output {
   width: 100%;
   min-height: 180px;

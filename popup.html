@@ -11,14 +11,11 @@
     <label for="discordToken">Discord Token</label>
     <input type="password" id="discordToken" placeholder="&#x0e43;&#x0e2a;&#x0e48; token" class="token-input">
     <button id="saveDiscordSettings" class="btn-save">&#x0e1a;&#x0e31;&#x0e19;&#x0e17;&#x0e36;&#x0e01;</button>
-    <label class="toggle-row" for="lyricsDebugMode">
-      <span>Debug เนื้อเพลงใน Console</span>
-      <input type="checkbox" id="lyricsDebugMode" class="toggle-input">
-      <span class="toggle-slider" aria-hidden="true"></span>
-    </label>
+    <label for="currentLyric">กำลังร้อง</label>
+    <div id="currentLyric" class="current-lyric" aria-live="polite">ยังไม่มีข้อมูล</div>
     <label for="lyricsOutput">เนื้อเพลงทั้งหมด</label>
     <textarea id="lyricsOutput" class="lyrics-output" readonly placeholder="กดโหลดเพื่อแสดงเนื้อเพลง"></textarea>
-    <button id="loadLyrics" class="btn-load">โหลดเนื้อเพลง</button>
+    <button id="loadLyrics" class="btn-load">โหลดเนื้อเพลงทั้งหมด</button>
     <p id="lyricsStatus" class="status-message" aria-live="polite"></p>
     <p id="discordStatus" class="status-message" aria-live="polite"></p>
   </div>

@@ -2,10 +2,7 @@
 // Reads Spotify DOM state and reports playback/lyric changes to the extension.
 
 const ACTIONS = {
-  GET_CURRENT_TRACK: 'getCurrentTrack',
-  GET_LYRICS: 'getLyricsFromDOM',
   TRACK_CHANGED: 'trackChanged',
-  PLAYBACK_CHANGED: 'spotifyPlaybackChanged',
   LYRIC_CHANGED: 'currentLyricChanged'
 };
 
@@ -18,51 +15,28 @@ const SELECTORS = {
   nowPlayingHeader: '[data-testid="now-playing-header"]'
 };
 
+const COMPLETED_LYRIC_CLASS = 'loNizikBbaCKyI9Gv8xg';
+
 const INTERVALS = {
   lyricTrackingMs: 300,
-  trackTrackingMs: 1000,
-  playbackTrackingMs: 1000
+  trackTrackingMs: 1000
 };
 
-const LYRICS_WAIT_MS = 5000;
-const LYRICS_WAIT_STEP_MS = 500;
 const MIN_LYRIC_LENGTH = 2;
-const MIN_FULL_LYRICS_LENGTH = 10;
 const MUSIC_NOTE_TEXT = '\u266a';
 
 let lastReportedLyric = '';
+let lastReportedLyrics = '';
 let lastReportedTrack = null;
-let lastReportedPlayState = null;
 let extensionContextActive = true;
 const observerIntervalIds = [];
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === ACTIONS.GET_CURRENT_TRACK) {
-    sendResponse(getCurrentTrackInfo());
-    return;
-  }
-
-  if (message.action === ACTIONS.GET_LYRICS) {
-    getLyricsFromSpotifyDOM().then((lyrics) => {
-      sendResponse({ lyrics });
-    });
-    return true;
-  }
-});
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'sync' && changes.lyricsDebugMode?.newValue === true) {
-    getLyricsFromSpotifyDOM();
-  }
-});
 
 startSpotifyObservers();
 
 function startSpotifyObservers() {
   observerIntervalIds.push(
     setInterval(reportCurrentLyricIfChanged, INTERVALS.lyricTrackingMs),
-    setInterval(reportCurrentTrackIfChanged, INTERVALS.trackTrackingMs),
-    setInterval(reportPlaybackStateIfChanged, INTERVALS.playbackTrackingMs)
+    setInterval(reportCurrentTrackIfChanged, INTERVALS.trackTrackingMs)
   );
 }
 
@@ -75,16 +49,26 @@ function reportCurrentLyricIfChanged() {
     return;
   }
 
+  const lyrics = getAllLyrics();
   const currentLyric = findCurrentLyric();
 
-  if (!currentLyric || currentLyric === lastReportedLyric) {
+  if (!currentLyric && !lyrics) {
     return;
   }
 
-  lastReportedLyric = currentLyric;
+  const lyricChanged = currentLyric && currentLyric !== lastReportedLyric;
+  const lyricsChanged = lyrics && lyrics !== lastReportedLyrics;
+
+  if (!lyricChanged && !lyricsChanged) {
+    return;
+  }
+
+  lastReportedLyric = currentLyric || lastReportedLyric;
+  lastReportedLyrics = lyrics || lastReportedLyrics;
   safeSendMessage({
     action: ACTIONS.LYRIC_CHANGED,
-    lyric: currentLyric
+    lyric: currentLyric,
+    lyrics: lastReportedLyrics
   });
 }
 
@@ -101,37 +85,10 @@ function reportCurrentTrackIfChanged() {
 
   lastReportedTrack = currentTrack;
   lastReportedLyric = '';
-  isLyricsDebugModeEnabled().then((isEnabled) => {
-    if (isEnabled) {
-      getLyricsFromSpotifyDOM();
-    }
-  });
+  lastReportedLyrics = '';
   safeSendMessage({
     action: ACTIONS.TRACK_CHANGED,
     track: currentTrack
-  });
-}
-
-function reportPlaybackStateIfChanged() {
-  if (!extensionContextActive) {
-    return;
-  }
-
-  const isPlaying = isSpotifyPlaying();
-
-  if (isPlaying === lastReportedPlayState) {
-    return;
-  }
-
-  lastReportedPlayState = isPlaying;
-
-  if (!isPlaying) {
-    lastReportedLyric = '';
-  }
-
-  safeSendMessage({
-    action: ACTIONS.PLAYBACK_CHANGED,
-    isPlaying
   });
 }
 
@@ -183,6 +140,14 @@ function findCurrentLyric() {
   return bestLine;
 }
 
+function getAllLyrics() {
+  const lines = Array.from(document.querySelectorAll(SELECTORS.lyricLine))
+    .map((line) => getElementText(line.querySelector('div') || line))
+    .filter(isValidLyricText);
+
+  return lines.join('\n');
+}
+
 function getCurrentTrackInfo() {
   try {
     const metaTitle = document.querySelector('meta[property="og:title"]')?.content || '';
@@ -223,82 +188,21 @@ function getCurrentTrackInfo() {
   }
 }
 
-async function getLyricsFromSpotifyDOM() {
-  if (!isSpotifyPlaying()) {
-    return null;
-  }
-
-  try {
-    const hasLyrics = await waitForLyrics();
-
-    if (!hasLyrics) {
-      return null;
-    }
-
-    const lines = Array.from(document.querySelectorAll(SELECTORS.lyricLine))
-      .map((line) => getElementText(line.querySelector('div') || line))
-      .filter(isValidLyricText);
-
-    const lyricsText = lines.join('\n');
-
-    if (lyricsText.length < MIN_FULL_LYRICS_LENGTH) {
-      return null;
-    }
-
-    const currentLyric = findHighlightedLyric() || findCurrentLyric();
-    const formattedLyrics = currentLyric
-      ? `>>> 🎵 NOW PLAYING <<<\n${currentLyric}\n\n${lyricsText}`
-      : lyricsText;
-
-    if (await isLyricsDebugModeEnabled()) {
-      console.groupCollapsed(`[Lyrics Debug] ${getCurrentTrackInfo().title || 'Spotify track'}`);
-      console.log(formattedLyrics);
-      console.groupEnd();
-    }
-
-    return formattedLyrics;
-  } catch (error) {
-    console.error('Error reading Spotify lyrics:', error);
-    return null;
-  }
-}
-
-function isLyricsDebugModeEnabled() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get('lyricsDebugMode', (data) => {
-      resolve(Boolean(data.lyricsDebugMode));
-    });
-  });
-}
-
-function waitForLyrics(maxWaitMs = LYRICS_WAIT_MS) {
-  const startedAt = Date.now();
-
-  return new Promise((resolve) => {
-    const check = () => {
-      if (document.querySelectorAll(SELECTORS.lyricLine).length > 0) {
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() - startedAt >= maxWaitMs) {
-        resolve(false);
-        return;
-      }
-
-      setTimeout(check, LYRICS_WAIT_STEP_MS);
-    };
-
-    check();
-  });
-}
-
 function findHighlightedLyric() {
   const lyricLines = Array.from(document.querySelectorAll(SELECTORS.lyricLine));
   const highlightedLine = lyricLines.find(isHighlightedLyricLine);
 
   if (highlightedLine) {
     return getElementText(highlightedLine.querySelector('div') || highlightedLine);
+  }
+
+  const firstUpcomingLine = lyricLines.find((line) => {
+    const textElement = line.querySelector('div') || line;
+    return !isCompletedLyricLine(line) && isValidLyricText(getElementText(textElement));
+  });
+
+  if (firstUpcomingLine) {
+    return getElementText(firstUpcomingLine.querySelector('div') || firstUpcomingLine);
   }
 
   const highlightedText = Array.from(document.querySelectorAll(SELECTORS.lyricTextFallback))
@@ -327,6 +231,12 @@ function isHighlightedLyricLine(line) {
 
   const textElement = line.querySelector('div') || line;
   return activeClassPattern.test(textElement.className);
+}
+
+function isCompletedLyricLine(line) {
+  const textElement = line.querySelector('div') || line;
+  return line.classList.contains(COMPLETED_LYRIC_CLASS) ||
+    textElement.classList.contains(COMPLETED_LYRIC_CLASS);
 }
 
 function parseArtistFromDescription(description) {

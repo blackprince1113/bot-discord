@@ -5,14 +5,15 @@ const DISCORD_STATUS_LIMIT = 128;
 const STORAGE_KEYS = {
   token: 'discordToken',
   autoUpdate: 'autoUpdateDiscord',
-  lyricsDebug: 'lyricsDebugMode'
+  latestLyrics: 'latestLyrics',
+  currentLyric: 'currentLyric'
 };
 
 async function updateDiscordStatus(token, status) {
   const text = String(status || '').trim().slice(0, DISCORD_STATUS_LIMIT);
 
   if (!text) {
-    return clearDiscordStatus(token);
+    return false;
   }
 
   const response = await discordRequest(token, '/users/@me/settings', {
@@ -36,46 +37,6 @@ async function updateDiscordStatus(token, status) {
   return false;
 }
 
-async function testDiscordToken(token) {
-  const response = await discordRequest(token, '/users/@me');
-
-  if (response.ok) {
-    console.log('Discord token valid for user:', response.data.username);
-    return {
-      valid: true,
-      username: response.data.username,
-      userId: response.data.id
-    };
-  }
-
-  return {
-    valid: false,
-    error: response.status === 401
-      ? 'Token ไม่ถูกต้อง'
-      : 'เชื่อมต่อ Discord ไม่สำเร็จ'
-  };
-}
-
-async function clearDiscordStatus(token) {
-  const response = await discordRequest(token, '/users/@me/settings', {
-    method: 'PATCH',
-    body: { custom_status: null }
-  });
-
-  if (response.ok) {
-    console.log('Discord status cleared');
-    return true;
-  }
-
-  console.error('Discord status clear failed:', response.error);
-  return false;
-}
-
-async function getDiscordUserInfo(token) {
-  const response = await discordRequest(token, '/users/@me');
-  return response.ok ? response.data : null;
-}
-
 async function saveDiscordToken(token) {
   await setChromeStorage({ [STORAGE_KEYS.token]: token });
   console.log('Discord token saved');
@@ -96,18 +57,22 @@ async function getDiscordAutoUpdate() {
   return data[STORAGE_KEYS.autoUpdate] !== false;
 }
 
-async function saveLyricsDebugMode(enabled) {
-  await setChromeStorage({ [STORAGE_KEYS.lyricsDebug]: Boolean(enabled) });
+async function saveLatestLyrics(lyrics) {
+  await setChromeLocalStorage({ [STORAGE_KEYS.latestLyrics]: String(lyrics || '').trim() });
 }
 
-async function getLyricsDebugMode() {
-  const data = await getChromeStorage(STORAGE_KEYS.lyricsDebug);
-  return Boolean(data[STORAGE_KEYS.lyricsDebug]);
+async function saveCurrentLyric(lyric) {
+  await setChromeLocalStorage({ [STORAGE_KEYS.currentLyric]: String(lyric || '').trim() });
 }
 
-async function deleteDiscordToken() {
-  await removeChromeStorage(STORAGE_KEYS.token);
-  console.log('Discord token removed');
+async function getLatestLyrics() {
+  const data = await getChromeLocalStorage(STORAGE_KEYS.latestLyrics);
+  return data[STORAGE_KEYS.latestLyrics] || '';
+}
+
+async function getCurrentLyric() {
+  const data = await getChromeLocalStorage(STORAGE_KEYS.currentLyric);
+  return data[STORAGE_KEYS.currentLyric] || '';
 }
 
 async function discordRequest(token, path, options = {}) {
@@ -183,9 +148,9 @@ function setChromeStorage(data) {
   });
 }
 
-function removeChromeStorage(key) {
+function setChromeLocalStorage(data) {
   return new Promise((resolve, reject) => {
-    chrome.storage.sync.remove(key, () => {
+    chrome.storage.local.set(data, () => {
       const error = chrome.runtime.lastError;
 
       if (error) {
@@ -197,3 +162,19 @@ function removeChromeStorage(key) {
     });
   });
 }
+
+function getChromeLocalStorage(key) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(key, (data) => {
+      const error = chrome.runtime.lastError;
+
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+
+      resolve(data);
+    });
+  });
+}
+
