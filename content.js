@@ -25,8 +25,13 @@ const SELECTORS = {
   nowPlayingHeader: '[data-testid="now-playing-header"]'
 };
 
-const COMPLETED_LYRIC_CLASS = 'loNizikBbaCKyI9Gv8xg';
-const CURRENT_LYRIC_CLASS = 'dPaa_Hg0z0Ql_UBrV9uZ';
+const COMPLETED_LYRIC_CLASSES = ['NToFVceZLenbhmfcDb3s', 'loNizikBbaCKyI9Gv8xg'];
+const CURRENT_LYRIC_CLASSES = ['xp5WpqjB3u9hFHWKn2aE', 'dPaa_Hg0z0Ql_UBrV9uZ'];
+const UPCOMING_LYRIC_CLASSES = ['tixQoLB1xUrPglVJ91J4'];
+
+const COMPLETED_LYRIC_CLASS = COMPLETED_LYRIC_CLASSES[0];
+const CURRENT_LYRIC_CLASS = CURRENT_LYRIC_CLASSES[0];
+const UPCOMING_LYRIC_CLASS = UPCOMING_LYRIC_CLASSES[0];
 
 const INTERVALS = {
   lyricTrackingMs: 300,
@@ -258,13 +263,13 @@ function isHighlightedLyricLine(line) {
     return true;
   }
 
-  const activeClassPattern = /(active|current|highlight|selected|RL7r4lsMHxMySdFr)/i;
+  const activeClassPattern = /(active|current|highlight|selected|RL7r4lsMHxMySdFr|xp5WpqjB3u9hFHWKn2aE|dPaa_Hg0z0Ql_UBrV9uZ)/i;
 
   if (activeClassPattern.test(line.className)) {
     return true;
   }
 
-  if (line.classList.contains(CURRENT_LYRIC_CLASS)) {
+  if (CURRENT_LYRIC_CLASSES.some((cls) => line.classList.contains(cls))) {
     return true;
   }
 
@@ -274,8 +279,9 @@ function isHighlightedLyricLine(line) {
 
 function isCompletedLyricLine(line) {
   const textElement = line.querySelector('div') || line;
-  return line.classList.contains(COMPLETED_LYRIC_CLASS) ||
-    textElement.classList.contains(COMPLETED_LYRIC_CLASS);
+  return COMPLETED_LYRIC_CLASSES.some((cls) =>
+    line.classList.contains(cls) || textElement.classList.contains(cls)
+  );
 }
 
 function parseArtistFromDescription(description) {
